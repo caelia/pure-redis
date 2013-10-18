@@ -1,0 +1,956 @@
+using system, sockets;
+
+namespace redis;
+
+const default_host = "127.0.0.1";
+const default_port = 6379;
+
+private send fp args = ;
+    nd fp cmd_string when
+    init = "*" + str (#args) + "\r\n";
+    cmd_string = fold build init args;
+  end with
+    build arg = "$" + 
+
+private recv fp = ;
+
+private command conn args = response when
+    fp = fdopen conn "r+";
+    send fp args;
+    response = recv fp;
+    fclose fp;
+  end;
+
+connect (host, port) = sock when
+    sock = sockets::socket (AF_INET SOCK_STREAM IPPROTO_TCP);
+    addr = sockets::sockaddr (AF_INET, host, port);
+    sockets::connect sock addr;
+  end;
+
+connect port::integer = connect [default_host, port];
+
+connect [] = connect [default_host, default_port];
+
+
+// ====================================================================== //
+//     @generic
+// ====================================================================== //
+
+/*
+DEL key [key ...]
+summary: Delete a key
+*/
+// del conn key [key ...] = ;
+
+/*
+DUMP key
+summary: Return a serialized version of the value stored at the specified key.
+*/
+// dump conn key = ;
+
+/*
+EXISTS key
+summary: Determine if a key exists
+*/
+// exists conn key = ;
+
+/*
+EXPIRE key seconds
+summary: Set a key's time to live in seconds
+*/
+// expire conn key seconds = ;
+
+/*
+EXPIREAT key timestamp
+summary: Set the expiration for a key as a UNIX timestamp
+*/
+// expireat conn key timestamp = ;
+
+/*
+KEYS pattern
+summary: Find all keys matching the given pattern
+*/
+// keys conn pattern = ;
+
+/*
+MIGRATE host port key destination-db timeout
+summary: Atomically transfer a key from a Redis instance to another one.
+*/
+// migrate conn host port key destination-db timeout = ;
+
+/*
+MOVE key db
+summary: Move a key to another database
+*/
+// move conn key db = ;
+
+/*
+OBJECT subcommand [arguments [arguments ...]]
+summary: Inspect the internals of Redis objects
+*/
+// object conn subcommand [arguments [arguments ...]] = ;
+
+/*
+PERSIST key
+summary: Remove the expiration from a key
+*/
+// persist conn key = ;
+
+/*
+PEXPIRE key milliseconds
+summary: Set a key's time to live in milliseconds
+*/
+// pexpire conn key milliseconds = ;
+
+/*
+PEXPIREAT key milliseconds-timestamp
+summary: Set the expiration for a key as a UNIX timestamp specified in milliseconds
+*/
+// pexpireat conn key milliseconds-timestamp = ;
+
+/*
+PTTL key
+summary: Get the time to live for a key in milliseconds
+*/
+// pttl conn key = ;
+
+/*
+RANDOMKEY -
+summary: Return a random key from the keyspace
+*/
+// randomkey conn - = ;
+
+/*
+RENAME key newkey
+summary: Rename a key
+*/
+// rename conn key newkey = ;
+
+/*
+RENAMENX key newkey
+summary: Rename a key, only if the new key does not exist
+*/
+// renamenx conn key newkey = ;
+
+/*
+RESTORE key ttl serialized-value
+summary: Create a key using the provided serialized value, previously obtained using DUMP.
+*/
+// restore conn key ttl serialized-value = ;
+
+/*
+SORT key [BY pattern] [LIMIT offset count] [GET pattern [GET pattern ...]] [ASC|DESC] [ALPHA] [STORE destination]
+summary: Sort the elements in a list, set or sorted set
+*/
+// sort conn key [by pattern] [limit offset count] [get pattern [get pattern ...]] [asc|desc] [alpha] [store destination] = ;
+
+/*
+TTL key
+summary: Get the time to live for a key
+*/
+// ttl conn key = ;
+
+/*
+TYPE key
+summary: Determine the type stored at key
+*/
+// type conn key
+
+// ====================================================================== //
+//     @string
+// ====================================================================== //
+
+/*
+APPEND key value
+summary: Append a value to a key
+*/
+// append conn key value = ;
+
+/*
+BITCOUNT key [start] [end]
+summary: Count set bits in a string
+*/
+// bitcount conn key [start] [end] = ;
+
+/*
+BITOP operation destkey key [key ...]
+summary: Perform bitwise operations between strings
+*/
+// bitop conn operation destkey key [key ...] = ;
+
+/*
+DECR key
+summary: Decrement the integer value of a key by one
+*/
+// decr conn key = ;
+
+/*
+DECRBY key decrement
+summary: Decrement the integer value of a key by the given number
+*/
+// decrby conn key decrement = ;
+
+/*
+GET key
+summary: Get the value of a key
+*/
+// get conn key = ;
+
+/*
+GETBIT key offset
+summary: Returns the bit value at offset in the string value stored at key
+*/
+// getbit conn key offset = ;
+
+/*
+GETRANGE key start end
+summary: Get a substring of the string stored at a key
+*/
+// getrange conn key start end = ;
+
+/*
+GETSET key value
+summary: Set the string value of a key and return its old value
+*/
+// getset conn key value = ;
+
+/*
+INCR key
+summary: Increment the integer value of a key by one
+*/
+// incr conn key = ;
+
+/*
+INCRBY key increment
+summary: Increment the integer value of a key by the given amount
+*/
+// incrby conn key increment = ;
+
+/*
+INCRBYFLOAT key increment
+summary: Increment the float value of a key by the given amount
+*/
+// incrbyfloat conn key increment = ;
+
+/*
+MGET key [key ...]
+summary: Get the values of all the given keys
+*/
+// mget conn key [key ...] = ;
+
+/*
+MSET key value [key value ...]
+summary: Set multiple keys to multiple values
+*/
+// mset conn key value [key value ...] = ;
+
+/*
+MSETNX key value [key value ...]
+summary: Set multiple keys to multiple values, only if none of the keys exist
+*/
+// msetnx conn key value [key value ...] = ;
+
+/*
+PSETEX key milliseconds value
+summary: Set the value and expiration in milliseconds of a key
+*/
+// psetex conn key milliseconds value = ;
+
+/*
+SET key value [EX seconds] [PX milliseconds] [NX|XX]
+summary: Set the string value of a key
+*/
+// set conn key value [ex seconds] [px milliseconds] [nx|xx] = ;
+
+/*
+SETBIT key offset value
+summary: Sets or clears the bit at offset in the string value stored at key
+*/
+// setbit conn key offset value = ;
+
+/*
+SETEX key seconds value
+summary: Set the value and expiration of a key
+*/
+// setex conn key seconds value = ;
+
+/*
+SETNX key value
+summary: Set the value of a key, only if the key does not exist
+*/
+// setnx conn key value = ;
+
+/*
+SETRANGE key offset value
+summary: Overwrite part of a string at key starting at the specified offset
+*/
+// setrange conn key offset value = ;
+
+/*
+STRLEN key
+summary: Get the length of the value stored in a key
+*/
+// strlen conn key
+
+// ====================================================================== //
+//     @hash
+// ====================================================================== //
+
+/*
+HDEL key field [field ...]
+summary: Delete one or more hash fields
+*/
+// hdel conn key field [field ...] = ;
+
+/*
+HEXISTS key field
+summary: Determine if a hash field exists
+*/
+// hexists conn key field = ;
+
+/*
+HGET key field
+summary: Get the value of a hash field
+*/
+// hget conn key field = ;
+
+/*
+HGETALL key
+summary: Get all the fields and values in a hash
+*/
+// hgetall conn key = ;
+
+/*
+HINCRBY key field increment
+summary: Increment the integer value of a hash field by the given number
+*/
+// hincrby conn key field increment = ;
+
+/*
+HINCRBYFLOAT key field increment
+summary: Increment the float value of a hash field by the given amount
+*/
+// hincrbyfloat conn key field increment = ;
+
+/*
+HKEYS key
+summary: Get all the fields in a hash
+*/
+// hkeys conn key = ;
+
+/*
+HLEN key
+summary: Get the number of fields in a hash
+*/
+// hlen conn key = ;
+
+/*
+HMGET key field [field ...]
+summary: Get the values of all the given hash fields
+*/
+// hmget conn key field [field ...] = ;
+
+/*
+HMSET key field value [field value ...]
+summary: Set multiple hash fields to multiple values
+*/
+// hmset conn key field value [field value ...] = ;
+
+/*
+HSET key field value
+summary: Set the string value of a hash field
+*/
+// hset conn key field value = ;
+
+/*
+HSETNX key field value
+summary: Set the value of a hash field, only if the field does not exist
+*/
+// hsetnx conn key field value = ;
+
+/*
+HVALS key
+summary: Get all the values in a hash
+*/
+// hvals conn key
+
+// ====================================================================== //
+//     @list
+// ====================================================================== //
+
+/*
+BLPOP key [key ...] timeout
+summary: Remove and get the first element in a list, or block until one is available
+*/
+// blpop conn key [key ...] timeout = ;
+
+/*
+BRPOP key [key ...] timeout
+summary: Remove and get the last element in a list, or block until one is available
+*/
+// brpop conn key [key ...] timeout = ;
+
+/*
+BRPOPLPUSH source destination timeout
+summary: Pop a value from a list, push it to another list and return it; or block until one is available
+*/
+// brpoplpush conn source destination timeout = ;
+
+/*
+LINDEX key index
+summary: Get an element from a list by its index
+*/
+// lindex conn key index = ;
+
+/*
+LINSERT key BEFORE|AFTER pivot value
+summary: Insert an element before or after another element in a list
+*/
+// linsert conn key before|after pivot value = ;
+
+/*
+LLEN key
+summary: Get the length of a list
+*/
+// llen conn key = ;
+
+/*
+LPOP key
+summary: Remove and get the first element in a list
+*/
+// lpop conn key = ;
+
+/*
+LPUSH key value [value ...]
+summary: Prepend one or multiple values to a list
+*/
+// lpush conn key value [value ...] = ;
+
+/*
+LPUSHX key value
+summary: Prepend a value to a list, only if the list exists
+*/
+// lpushx conn key value = ;
+
+/*
+LRANGE key start stop
+summary: Get a range of elements from a list
+*/
+// lrange conn key start stop = ;
+
+/*
+LREM key count value
+summary: Remove elements from a list
+*/
+// lrem conn key count value = ;
+
+/*
+LSET key index value
+summary: Set the value of an element in a list by its index
+*/
+// lset conn key index value = ;
+
+/*
+LTRIM key start stop
+summary: Trim a list to the specified range
+*/
+// ltrim conn key start stop = ;
+
+/*
+RPOP key
+summary: Remove and get the last element in a list
+*/
+// rpop conn key = ;
+
+/*
+RPOPLPUSH source destination
+summary: Remove the last element in a list, append it to another list and return it
+*/
+// rpoplpush conn source destination = ;
+
+/*
+RPUSH key value [value ...]
+summary: Append one or multiple values to a list
+*/
+// rpush conn key value [value ...] = ;
+
+/*
+RPUSHX key value
+summary: Append a value to a list, only if the list exists
+*/
+// rpushx conn key value
+
+// ====================================================================== //
+//     @set
+// ====================================================================== //
+
+/*
+SADD key member [member ...]
+summary: Add one or more members to a set
+*/
+// sadd conn key member [member ...] = ;
+
+/*
+SCARD key
+summary: Get the number of members in a set
+*/
+// scard conn key = ;
+
+/*
+SDIFF key [key ...]
+summary: Subtract multiple sets
+*/
+// sdiff conn key [key ...] = ;
+
+/*
+SDIFFSTORE destination key [key ...]
+summary: Subtract multiple sets and store the resulting set in a key
+*/
+// sdiffstore conn destination key [key ...] = ;
+
+/*
+SINTER key [key ...]
+summary: Intersect multiple sets
+*/
+// sinter conn key [key ...] = ;
+
+/*
+SINTERSTORE destination key [key ...]
+summary: Intersect multiple sets and store the resulting set in a key
+*/
+// sinterstore conn destination key [key ...] = ;
+
+/*
+SISMEMBER key member
+summary: Determine if a given value is a member of a set
+*/
+// sismember conn key member = ;
+
+/*
+SMEMBERS key
+summary: Get all the members in a set
+*/
+// smembers conn key = ;
+
+/*
+SMOVE source destination member
+summary: Move a member from one set to another
+*/
+// smove conn source destination member = ;
+
+/*
+SPOP key
+summary: Remove and return a random member from a set
+*/
+// spop conn key = ;
+
+/*
+SRANDMEMBER key [count]
+summary: Get one or multiple random members from a set
+*/
+// srandmember conn key [count] = ;
+
+/*
+SREM key member [member ...]
+summary: Remove one or more members from a set
+*/
+// srem conn key member [member ...] = ;
+
+/*
+SUNION key [key ...]
+summary: Add multiple sets
+*/
+// sunion conn key [key ...] = ;
+
+/*
+SUNIONSTORE destination key [key ...]
+summary: Add multiple sets and store the resulting set in a key
+*/
+// sunionstore conn destination key [key ...]
+
+// ====================================================================== //
+//     @sorted_set
+// ====================================================================== //
+
+/*
+ZADD key score member [score member ...]
+summary: Add one or more members to a sorted set, or update its score if it already exists
+*/
+// zadd conn key score member [score member ...] = ;
+
+/*
+ZCARD key
+summary: Get the number of members in a sorted set
+*/
+// zcard conn key = ;
+
+/*
+ZCOUNT key min max
+summary: Count the members in a sorted set with scores within the given values
+*/
+// zcount conn key min max = ;
+
+/*
+ZINCRBY key increment member
+summary: Increment the score of a member in a sorted set
+*/
+// zincrby conn key increment member = ;
+
+/*
+ZINTERSTORE destination numkeys key [key ...] [WEIGHTS weight] [AGGREGATE SUM|MIN|MAX]
+summary: Intersect multiple sorted sets and store the resulting sorted set in a new key
+*/
+// zinterstore conn destination numkeys key [key ...] [weights weight] [aggregate sum|min|max] = ;
+
+/*
+ZRANGE key start stop [WITHSCORES]
+summary: Return a range of members in a sorted set, by index
+*/
+// zrange conn key start stop [withscores] = ;
+
+/*
+ZRANGEBYSCORE key min max [WITHSCORES] [LIMIT offset count]
+summary: Return a range of members in a sorted set, by score
+*/
+// zrangebyscore conn key min max [withscores] [limit offset count] = ;
+
+/*
+ZRANK key member
+summary: Determine the index of a member in a sorted set
+*/
+// zrank conn key member = ;
+
+/*
+ZREM key member [member ...]
+summary: Remove one or more members from a sorted set
+*/
+// zrem conn key member [member ...] = ;
+
+/*
+ZREMRANGEBYRANK key start stop
+summary: Remove all members in a sorted set within the given indexes
+*/
+// zremrangebyrank conn key start stop = ;
+
+/*
+ZREMRANGEBYSCORE key min max
+summary: Remove all members in a sorted set within the given scores
+*/
+// zremrangebyscore conn key min max = ;
+
+/*
+ZREVRANGE key start stop [WITHSCORES]
+summary: Return a range of members in a sorted set, by index, with scores ordered from high to low
+*/
+// zrevrange conn key start stop [withscores] = ;
+
+/*
+ZREVRANGEBYSCORE key max min [WITHSCORES] [LIMIT offset count]
+summary: Return a range of members in a sorted set, by score, with scores ordered from high to low
+*/
+// zrevrangebyscore conn key max min [withscores] [limit offset count] = ;
+
+/*
+ZREVRANK key member
+summary: Determine the index of a member in a sorted set, with scores ordered from high to low
+*/
+// zrevrank conn key member = ;
+
+/*
+ZSCORE key member
+summary: Get the score associated with the given member in a sorted set
+*/
+// zscore conn key member = ;
+
+/*
+ZUNIONSTORE destination numkeys key [key ...] [WEIGHTS weight] [AGGREGATE SUM|MIN|MAX]
+summary: Add multiple sorted sets and store the resulting sorted set in a new key
+*/
+// zunionstore conn destination numkeys key [key ...] [weights weight] [aggregate sum|min|max]
+
+// ====================================================================== //
+//     @pubsub
+// ====================================================================== //
+
+/*
+PSUBSCRIBE pattern [pattern ...]
+summary: Listen for messages published to channels matching the given patterns
+*/
+// psubscribe conn pattern [pattern ...] = ;
+
+/*
+PUBLISH channel message
+summary: Post a message to a channel
+*/
+// publish conn channel message = ;
+
+/*
+PUNSUBSCRIBE [pattern [pattern ...]]
+summary: Stop listening for messages posted to channels matching the given patterns
+*/
+// punsubscribe conn [pattern [pattern ...]] = ;
+
+/*
+SUBSCRIBE channel [channel ...]
+summary: Listen for messages published to the given channels
+*/
+// subscribe conn channel [channel ...] = ;
+
+/*
+UNSUBSCRIBE [channel [channel ...]]
+summary: Stop listening for messages posted to the given channels
+*/
+// unsubscribe conn [channel [channel ...]]
+
+// ====================================================================== //
+//     @transactions
+// ====================================================================== //
+
+/*
+DISCARD -
+summary: Discard all commands issued after MULTI
+*/
+// discard conn - = ;
+
+/*
+EXEC -
+summary: Execute all commands issued after MULTI
+*/
+// exec conn - = ;
+
+/*
+MULTI -
+summary: Mark the start of a transaction block
+*/
+// multi conn - = ;
+
+/*
+UNWATCH -
+summary: Forget about all watched keys
+*/
+// unwatch conn - = ;
+
+/*
+WATCH key [key ...]
+summary: Watch the given keys to determine execution of the MULTI/EXEC block
+*/
+// watch conn key [key ...]
+
+// ====================================================================== //
+//     @scripting
+// ====================================================================== //
+
+/*
+EVAL script numkeys key [key ...] arg [arg ...]
+summary: Execute a Lua script server side
+*/
+// eval conn script numkeys key [key ...] arg [arg ...] = ;
+
+/*
+EVALSHA sha1 numkeys key [key ...] arg [arg ...]
+summary: Execute a Lua script server side
+*/
+// evalsha conn sha1 numkeys key [key ...] arg [arg ...] = ;
+
+/*
+SCRIPT EXISTS script [script ...]
+summary: Check existence of scripts in the script cache.
+*/
+// script conn exists script [script ...] = ;
+
+/*
+SCRIPT FLUSH -
+summary: Remove all the scripts from the script cache.
+*/
+// script conn flush - = ;
+
+/*
+SCRIPT KILL -
+summary: Kill the script currently in execution.
+*/
+// script conn kill - = ;
+
+/*
+SCRIPT LOAD script
+summary: Load the specified Lua script into the script cache.
+*/
+// script conn load script
+
+// ====================================================================== //
+//     @connection
+// ====================================================================== //
+
+/*
+AUTH password
+summary: Authenticate to the server
+*/
+// auth conn password = ;
+
+/*
+ECHO message
+summary: Echo the given string
+*/
+// echo conn message = ;
+
+/*
+PING -
+summary: Ping the server
+*/
+ping conn = command conn ["PING"] ;
+
+/*
+QUIT -
+summary: Close the connection
+*/
+// quit conn - = ;
+
+/*
+SELECT index
+summary: Change the selected database for the current connection
+*/
+// select conn index
+
+// ====================================================================== //
+//     @server
+// ====================================================================== //
+
+/*
+BGREWRITEAOF -
+summary: Asynchronously rewrite the append-only file
+*/
+// bgrewriteaof conn - = ;
+
+/*
+BGSAVE -
+summary: Asynchronously save the dataset to disk
+*/
+// bgsave conn - = ;
+
+/*
+CLIENT GETNAME -
+summary: Get the current connection name
+*/
+// client conn getname - = ;
+
+/*
+CLIENT KILL ip:port
+summary: Kill the connection of a client
+*/
+// client conn kill ip:port = ;
+
+/*
+CLIENT LIST -
+summary: Get the list of client connections
+*/
+// client conn list - = ;
+
+/*
+CLIENT SETNAME connection-name
+summary: Set the current connection name
+*/
+// client conn setname connection-name = ;
+
+/*
+CONFIG GET parameter
+summary: Get the value of a configuration parameter
+*/
+// config conn get parameter = ;
+
+/*
+CONFIG RESETSTAT -
+summary: Reset the stats returned by INFO
+*/
+// config conn resetstat - = ;
+
+/*
+CONFIG SET parameter value
+summary: Set a configuration parameter to the given value
+*/
+// config conn set parameter value = ;
+
+/*
+DBSIZE -
+summary: Return the number of keys in the selected database
+*/
+// dbsize conn - = ;
+
+/*
+DEBUG OBJECT key
+summary: Get debugging information about a key
+*/
+// debug conn object key = ;
+
+/*
+DEBUG SEGFAULT -
+summary: Make the server crash
+*/
+// debug conn segfault - = ;
+
+/*
+FLUSHALL -
+summary: Remove all keys from all databases
+*/
+// flushall conn - = ;
+
+/*
+FLUSHDB -
+summary: Remove all keys from the current database
+*/
+// flushdb conn - = ;
+
+/*
+INFO [section]
+summary: Get information and statistics about the server
+*/
+// info conn [section] = ;
+
+/*
+LASTSAVE -
+summary: Get the UNIX time stamp of the last successful save to disk
+*/
+// lastsave conn - = ;
+
+/*
+MONITOR -
+summary: Listen for all requests received by the server in real time
+*/
+// monitor conn - = ;
+
+/*
+SAVE -
+summary: Synchronously save the dataset to disk
+*/
+// save conn - = ;
+
+/*
+SHUTDOWN [NOSAVE] [SAVE]
+summary: Synchronously save the dataset to disk and then shut down the server
+*/
+// shutdown conn [nosave] [save] = ;
+
+/*
+SLAVEOF host port
+summary: Make the server a slave of another instance, or promote it as master
+*/
+// slaveof conn host port = ;
+
+/*
+SLOWLOG subcommand [argument]
+summary: Manages the Redis slow queries log
+*/
+// slowlog conn subcommand [argument] = ;
+
+/*
+SYNC -
+summary: Internal command used for replication
+*/
+// sync conn - = ;
+
+/*
+TIME -
+summary: Return the current server time
+*/
+// time conn - = ;
+
+
+namespace;
