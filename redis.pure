@@ -5,14 +5,39 @@ namespace redis;
 const default_host = "127.0.0.1";
 const default_port = 6379;
 
-private send fp args = ;
-    nd fp cmd_string when
-    init = "*" + str (#args) + "\r\n";
-    cmd_string = fold build init args;
-  end with
-    build arg = "$" + 
+type  reply (Status x::string)
+    | reply (Error x::string)
+    | reply (Integer x::int)
+    | reply (Bulk x::string)
+    | reply (Multi x::list) ;
 
-private recv fp = ;
+private send fp args = fputs cmd_string fp when 
+    init = "*" + str (#args) + "\r\n";
+    cmd_string = foldl build init args;
+  end with
+    build arg = "$" + str (#argstr) + "\r\n" + argstr + "\r\n" when
+        argstr x::string = x; argstr x = str x;
+      end;
+  end; 
+
+// Status Reply
+private prep_reply "+" rest =
+// Error Reply
+private prep_reply "-" rest =
+// Integer Reply
+private prep_reply ":" rest =
+// Bulk Reply
+private prep_reply "$" rest =
+// Multi Bulk Reply
+private prep_reply "*" rest =
+// This should never happen
+private prep_reply x rest = throw ("Reply0Misread: " + x);
+
+private recv fp = prep_reply first rest when
+    reply = fgets fp ;
+    first = reply!0 ;
+    rest = reply!!(1..#reply) ;
+  end;
 
 private command conn args = response when
     fp = fdopen conn "r+";
