@@ -20,18 +20,26 @@ private send fp args = fputs cmd_string fp when
       end;
   end; 
 
+private buffer size =
+
+private read_line sok = ;
+
+private read_bulk_item sok = ;
+
+private read_binstring sok len = ;
+
 // Status Reply
-private prep_reply "+" rest =
+private read_reply "+" sok = read_status ;
 // Error Reply
-private prep_reply "-" rest =
+private read_reply "-" sok = read_error ;
 // Integer Reply
-private prep_reply ":" rest =
+private read_reply ":" sok = read_int ; 
 // Bulk Reply
-private prep_reply "$" rest =
+private read_reply "$" sok = read_bulk ;
 // Multi Bulk Reply
-private prep_reply "*" rest =
+private read_reply "*" sok = read_multi_bulk ;
 // This should never happen
-private prep_reply x rest = throw ("Reply0Misread: " + x);
+private read_reply x sok = throw ("Reply0Misread: " + x);
 
 private recv fp = prep_reply first rest when
     reply = fgets fp ;
