@@ -1,6 +1,15 @@
-using system, sockets;
-
 namespace redis;
+/*
+private rsend read_byte read_char read_line read_int
+  read_string read_bulk_item read_multi_bulk read_reply
+  read_reply read_reply read_reply read_reply read_reply
+  rrecv rcommand;
+*/
+
+using system, sockets, pointers;
+
+private nonfix CR;
+// nonfix CR;
 
 const default_host = "127.0.0.1";
 const default_port = 6379;
@@ -11,59 +20,95 @@ type  reply (Status x::string)
     | reply (Bulk x::string)
     | reply (Multi x::list) ;
 
-private send fp args = fputs cmd_string fp when 
+rsend sok args = send sok cmd_string len 0 when 
     init = "*" + str (#args) + "\r\n";
-    cmd_string = foldl build init args;
+    argstrs = map prepare args;
+    cmd_string = foldl build init argstrs;
+    len = #cmd_string;
   end with
-    build arg = "$" + str (#argstr) + "\r\n" + argstr + "\r\n" when
-        argstr x::string = x; argstr x = str x;
-      end;
+    build prev arg = prev + "$" + str (#arg) + "\r\n" + arg + "\r\n";
+    prepare x::string = x; prepare x = str x;
   end; 
 
-private buffer size =
+read_byte sok = the_byte when
+    buf = malloc 1;
+    recv sok buf 1 0;
+    the_byte = get_byte buf;
+    free buf;
+  end; 
 
-private read_line sok = ;
+read_char sok = chr (read_byte sok);
 
-private read_bulk_item sok = ;
+read_line sok = loop 0 (read_char sok) [] with
+    loop CR "\n" chrs = string (reverse chrs);
+    loop CR "\r" chrs = loop CR (read_char sok) ("\r":chrs);
+    loop _ "\r" chrs = loop CR (read_char sok) chrs;
+    loop _ c chrs = loop 0 (read_char sok) (c:chrs);
+  end;
 
-private read_binstring sok len = ;
+read_int sok = eval (read_line sok);
+
+// FIXME: This is not going to work for binary input!
+read_string sok len = the_string when
+    buf = malloc len ;
+    recv sok buf len 0 ;
+    the_string = get_string buf ;
+    free buf ;
+    read_byte sok ;
+    read_byte sok ;
+  end;
+
+read_bulk_item sok = read_string sok len when
+    len = read_int sok;
+  end;
+
+read_multi_bulk sok = loop nargs [] when
+    nargs = read_int sok;
+  end with
+    loop 0 items = reverse items;
+    loop n items = loop (n-1) (read_bulk_item sok) if first == "$";
+                 = throw (ReplyParsingError "Expected '$' not found.");
+  end when
+    first = read_char sok;
+  end;
 
 // Status Reply
-private read_reply "+" sok = read_status ;
+read_reply "+" sok = Status (read_line sok);
 // Error Reply
-private read_reply "-" sok = read_error ;
+read_reply "-" sok = Error (read_line sok) ;
 // Integer Reply
-private read_reply ":" sok = read_int ; 
+//  FIXME: eval?! ... doesn't seem safe, but I couldn't find a
+//    string->number converter
+read_reply ":" sok = Integer (read_int sok) ;
 // Bulk Reply
-private read_reply "$" sok = read_bulk ;
+read_reply "$" sok = Bulk (read_bulk_item sok) ;
 // Multi Bulk Reply
-private read_reply "*" sok = read_multi_bulk ;
+read_reply "*" sok = Multi (read_multi_bulk sok) ;
 // This should never happen
-private read_reply x sok = throw ("Reply0Misread: " + x);
+read_reply x sok = throw ("Reply0Misread: " + x);
 
-private recv fp = prep_reply first rest when
-    reply = fgets fp ;
-    first = reply!0 ;
-    rest = reply!!(1..#reply) ;
+rrecv sok = read_reply first sok when
+    first = read_char sok;
   end;
 
-private command conn args = response when
-    fp = fdopen conn "r+";
-    send fp args;
-    response = recv fp;
-    fclose fp;
+rcommand sok args = response when
+    rsend sok args;
+    response = rrecv sok;
   end;
 
-connect (host, port) = sock when
-    sock = sockets::socket (AF_INET SOCK_STREAM IPPROTO_TCP);
-    addr = sockets::sockaddr (AF_INET, host, port);
-    sockets::connect sock addr;
+rconnect (host, port) = sock when
+    sock = socket AF_INET SOCK_STREAM IPPROTO_TCP;
+    addr = sockaddr (AF_INET, host, port);
+    connect sock addr;
   end;
 
-connect port::integer = connect [default_host, port];
+rconnect port::integer = rconnect (default_host, port);
 
-connect [] = connect [default_host, default_port];
+rconnect host::string = rconnect (host, default_port);
 
+rconnect () = rconnect (default_host, default_port);
+
+rdisconnect conn = shutdown conn SHUT_RDWR;
 
 // ====================================================================== //
 //     @generic
@@ -227,7 +272,7 @@ summary: Decrement the integer value of a key by the given number
 GET key
 summary: Get the value of a key
 */
-// get conn key = ;
+get conn key = rcommand conn ["GET", key];
 
 /*
 GETBIT key offset
@@ -294,6 +339,7 @@ SET key value [EX seconds] [PX milliseconds] [NX|XX]
 summary: Set the string value of a key
 */
 // set conn key value [ex seconds] [px milliseconds] [nx|xx] = ;
+set conn key value = rcommand conn ["SET", key, value];
 
 /*
 SETBIT key offset value
@@ -829,7 +875,7 @@ summary: Echo the given string
 PING -
 summary: Ping the server
 */
-ping conn = command conn ["PING"] ;
+ping conn = rcommand conn ["PING"] ;
 
 /*
 QUIT -
