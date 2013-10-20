@@ -9,6 +9,7 @@ private rsend read_byte read_char read_line read_int
 using system, sockets, pointers;
 
 private nonfix CR;
+nonfix Null;
 // nonfix CR;
 
 const default_host = "127.0.0.1";
@@ -18,7 +19,11 @@ type  reply (Status x::string)
     | reply (Error x::string)
     | reply (Integer x::int)
     | reply (Bulk x::string)
-    | reply (Multi x::list) ;
+    | reply (Multi x::list)
+    | reply Null ;
+
+rnull Null = true;
+rnull x = false;
 
 rsend sok args = send sok cmd_string len 0 when 
     init = "*" + str (#args) + "\r\n";
@@ -50,24 +55,33 @@ read_int sok = eval (read_line sok);
 
 // FIXME: This is not going to work for binary input!
 read_string sok len = the_string when
-    buf = malloc len ;
+    buf = malloc (len + 1) ;
     recv sok buf len 0 ;
-    the_string = get_string buf ;
+    put_byte (buf+len) 0;
+    // the_string = get_string buf ;
+    the_string = string_dup buf ;
     free buf ;
     read_byte sok ;
     read_byte sok ;
   end;
 
-read_bulk_item sok = read_string sok len when
+read_bulk_item sok = bulk_item when 
     len = read_int sok;
+    bulk_item = get_item len;
+  end with
+    /*
+    get_item -1 = NULL ;
+    get_item l = read_string sok l ;
+    */
+    get_item l = Null if l<0;
+               = read_string sok l otherwise;
   end;
 
 read_multi_bulk sok = loop nargs [] when
     nargs = read_int sok;
   end with
     loop 0 items = reverse items;
-    loop n items = loop (n-1) (read_bulk_item sok) if first == "$";
-                 = throw (ReplyParsingError "Expected '$' not found.");
+    loop n items = loop (n-1) (read_reply first sok);
   end when
     first = read_char sok;
   end;
@@ -81,7 +95,12 @@ read_reply "-" sok = Error (read_line sok) ;
 //    string->number converter
 read_reply ":" sok = Integer (read_int sok) ;
 // Bulk Reply
-read_reply "$" sok = Bulk (read_bulk_item sok) ;
+read_reply "$" sok = result when
+    result = prepare_result (read_bulk_item sok) ;
+  end with
+    prepare_result Null = Null;
+    prepare_result s = String s;
+  end;
 // Multi Bulk Reply
 read_reply "*" sok = Multi (read_multi_bulk sok) ;
 // This should never happen
