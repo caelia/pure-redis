@@ -77,14 +77,48 @@ read_bulk_item sok = bulk_item when
                = read_string sok l otherwise;
   end;
 
+/*
 read_multi_bulk sok = loop nargs [] when
     nargs = read_int sok;
+    printf "nargs = %d\n" nargs;
   end with
     loop 0 items = reverse items;
-    loop n items = loop (n-1) (read_reply first sok);
+    loop n items = loop (n-1) (read_reply first sok):items;
   end when
     first = read_char sok;
   end;
+*/
+
+/*
+read_multi_bulk sok nargs = loop nargs [] with
+    loop 0 items = reverse items;
+    loop n items = loop (n-1) (read_reply first sok):items;
+  end when
+    first = read_char sok;
+  end;
+*/
+
+read_multi_bulk sok = loop nargs [] with
+    loop 0 items = reverse items;
+    loop n items = loop (n-1) (reply:items) when
+        first = read_char sok;
+        reply = read_reply first sok;
+      end;
+  end when
+    nargs = read_int sok;
+  end;
+
+/*
+read_multi_bulk sok = loop nargs [] when
+    nargs = read_int sok;
+    printf "nargs = %d\n" nargs;
+  end with
+    loop 0 items = reverse items;
+    loop n items = loop (n-1) (read_reply first sok):items;
+  end when
+    first = read_char sok;
+  end;
+*/
 
 // Status Reply
 read_reply "+" sok = Status (read_line sok);
@@ -102,7 +136,7 @@ read_reply "$" sok = result when
     prepare_result s = String s;
   end;
 // Multi Bulk Reply
-read_reply "*" sok = Multi (read_multi_bulk sok) ;
+read_reply "*" sok = Multi (read_multi_bulk sok);
 // This should never happen
 read_reply x sok = throw ("Reply0Misread: " + x);
 
@@ -129,6 +163,15 @@ rconnect () = rconnect (default_host, default_port);
 
 rdisconnect conn = shutdown conn SHUT_RDWR;
 
+
+// ====================================================================== //
+//     UTILITY FUNCTIONS
+// ====================================================================== //
+
+flatten [] = [];
+flatten ((x, y):xyxy) = x:y:(flatten xyxy);
+
+
 // ====================================================================== //
 //     @generic
 // ====================================================================== //
@@ -137,121 +180,125 @@ rdisconnect conn = shutdown conn SHUT_RDWR;
 DEL key [key ...]
 summary: Delete a key
 */
-// del conn key [key ...] = ;
+del conn keys::list = rcommand conn ("DEL":keys);
+del conn key = rcommand conn ["DEL", "key"];
 
 /*
 DUMP key
 summary: Return a serialized version of the value stored at the specified key.
 */
-// dump conn key = ;
+dump conn key = rcommand conn ["DUMP", key];
 
 /*
 EXISTS key
 summary: Determine if a key exists
 */
-// exists conn key = ;
+exists conn key = rcommand conn ["EXISTS", key];
 
 /*
 EXPIRE key seconds
 summary: Set a key's time to live in seconds
 */
-// expire conn key seconds = ;
+expire conn key seconds = rcommand conn ["EXPIRE", key, seconds];
 
 /*
 EXPIREAT key timestamp
 summary: Set the expiration for a key as a UNIX timestamp
 */
-// expireat conn key timestamp = ;
+expireat conn key timestamp = rcommand conn ["EXPIREAT", key, timestamp];
 
 /*
 KEYS pattern
 summary: Find all keys matching the given pattern
 */
-// keys conn pattern = ;
+keys conn pattern = rcommand conn ["KEYS", pattern];
 
 /*
 MIGRATE host port key destination-db timeout
 summary: Atomically transfer a key from a Redis instance to another one.
 */
-// migrate conn host port key destination-db timeout = ;
+migrate conn host port key destination_db timeout
+    = rcommand conn ["MIGRATE", host, port, key, destination_db timeout];
 
 /*
 MOVE key db
 summary: Move a key to another database
 */
-// move conn key db = ;
+move conn key db = rcommand conn ["MOVE", key, db];
 
 /*
 OBJECT subcommand [arguments [arguments ...]]
 summary: Inspect the internals of Redis objects
 */
-// object conn subcommand [arguments [arguments ...]] = ;
+object conn subcommand arguments = rcommand conn ["OBJECT", subcommand, arguments];
 
 /*
 PERSIST key
 summary: Remove the expiration from a key
 */
-// persist conn key = ;
+persist conn key = rcommand conn ["PERSIST", key];
 
 /*
 PEXPIRE key milliseconds
 summary: Set a key's time to live in milliseconds
 */
-// pexpire conn key milliseconds = ;
+pexpire conn key ms = rcommand conn ["PEXPIRE", key, ms];
 
 /*
 PEXPIREAT key milliseconds-timestamp
 summary: Set the expiration for a key as a UNIX timestamp specified in milliseconds
 */
-// pexpireat conn key milliseconds-timestamp = ;
+pexpireat conn key ms_timestamp = rcommand conn ["PEXPIREAT", key, ms_timestamp];
 
 /*
 PTTL key
 summary: Get the time to live for a key in milliseconds
 */
-// pttl conn key = ;
+pttl conn key = rcommand conn ["PTTL", key];
 
 /*
 RANDOMKEY -
 summary: Return a random key from the keyspace
 */
-// randomkey conn - = ;
+randomkey conn = rcommand conn ["RANDOMKEY"];
 
 /*
 RENAME key newkey
 summary: Rename a key
 */
-// rename conn key newkey = ;
+rename conn key newkey = rcommand conn ["RENAME", key, newkey];
 
 /*
 RENAMENX key newkey
 summary: Rename a key, only if the new key does not exist
 */
-// renamenx conn key newkey = ;
+renamenx conn key newkey = rcommand conn ["RENAMENX", key, newkey];
 
 /*
 RESTORE key ttl serialized-value
 summary: Create a key using the provided serialized value, previously obtained using DUMP.
 */
-// restore conn key ttl serialized-value = ;
+restore conn key ttl serialized = rcommand conn ["RESTORE", key, ttl, serialized];
 
 /*
 SORT key [BY pattern] [LIMIT offset count] [GET pattern [GET pattern ...]] [ASC|DESC] [ALPHA] [STORE destination]
 summary: Sort the elements in a list, set or sorted set
 */
-// sort conn key [by pattern] [limit offset count] [get pattern [get pattern ...]] [asc|desc] [alpha] [store destination] = ;
+// sort_ conn key [by pattern] [limit offset count] [get pattern [get pattern ...]] [asc|desc] [alpha] [store destination] = ;
+sort conn key = rcommand conn ["SORT", key];
 
 /*
 TTL key
 summary: Get the time to live for a key
 */
-// ttl conn key = ;
+ttl conn key = rcommand conn ["TTL", key];
 
 /*
 TYPE key
 summary: Determine the type stored at key
 */
-// type conn key
+ktype conn key = rcommand conn ["TYPE", key];
+
 
 // ====================================================================== //
 //     @string
@@ -261,31 +308,33 @@ summary: Determine the type stored at key
 APPEND key value
 summary: Append a value to a key
 */
-// append conn key value = ;
+append conn key value = rcommand conn ["APPEND", key, value];
 
 /*
 BITCOUNT key [start] [end]
 summary: Count set bits in a string
 */
-// bitcount conn key [start] [end] = ;
+bitcount_ conn key start stop = rcommand conn ["BITCOUNT", key, start, stop];
+bitcount conn key = rcommand conn ["BITCOUNT", key];
 
 /*
 BITOP operation destkey key [key ...]
 summary: Perform bitwise operations between strings
 */
-// bitop conn operation destkey key [key ...] = ;
+bitop conn operation destkey keys::list = rcommand conn ("BITOP":operation:destkey:keys);
+bitop conn operation destkey key = rcommand conn ["BITOP", operation, destkey, key];
 
 /*
 DECR key
 summary: Decrement the integer value of a key by one
 */
-// decr conn key = ;
+decr conn key = rcommand conn ["DECR", key];
 
 /*
 DECRBY key decrement
 summary: Decrement the integer value of a key by the given number
 */
-// decrby conn key decrement = ;
+decrby conn key decrement = rcommand conn ["DECRBY", key, decrement];
 
 /*
 GET key
@@ -297,61 +346,61 @@ get conn key = rcommand conn ["GET", key];
 GETBIT key offset
 summary: Returns the bit value at offset in the string value stored at key
 */
-// getbit conn key offset = ;
+getbit conn key offset = rcommand conn ["GETBIT", key, offset];
 
 /*
 GETRANGE key start end
 summary: Get a substring of the string stored at a key
 */
-// getrange conn key start end = ;
+getrange conn key start stop = rcommand conn ["GETRANGE", key, start, stop];
 
 /*
 GETSET key value
 summary: Set the string value of a key and return its old value
 */
-// getset conn key value = ;
+getset conn key value = rcommand conn ["GETSET", key, value];
 
 /*
 INCR key
 summary: Increment the integer value of a key by one
 */
-// incr conn key = ;
+incr conn key = rcommand conn ["INCR", key];
 
 /*
 INCRBY key increment
 summary: Increment the integer value of a key by the given amount
 */
-// incrby conn key increment = ;
+incrby conn key increment = rcommand conn ["INCRBY", key, increment];
 
 /*
 INCRBYFLOAT key increment
 summary: Increment the float value of a key by the given amount
 */
-// incrbyfloat conn key increment = ;
+incrbyfloat conn key increment = rcommand conn ["INCRBYFLOAT", key, increment];
 
 /*
 MGET key [key ...]
 summary: Get the values of all the given keys
 */
-// mget conn key [key ...] = ;
+mget conn keys = rcommand conn ("MGET":keys);
 
 /*
 MSET key value [key value ...]
 summary: Set multiple keys to multiple values
 */
-// mset conn key value [key value ...] = ;
+mset conn keys_vals = rcommand conn ("MSET":(flatten keys_vals));
 
 /*
 MSETNX key value [key value ...]
 summary: Set multiple keys to multiple values, only if none of the keys exist
 */
-// msetnx conn key value [key value ...] = ;
+msetnx conn keys_vals = rcommand conn ("MSETNX":(flatten keys_vals));
 
 /*
 PSETEX key milliseconds value
 summary: Set the value and expiration in milliseconds of a key
 */
-// psetex conn key milliseconds value = ;
+psetex conn key ms value = rcommand conn ["PSETEX", key, ms, value];
 
 /*
 SET key value [EX seconds] [PX milliseconds] [NX|XX]
@@ -364,31 +413,32 @@ set conn key value = rcommand conn ["SET", key, value];
 SETBIT key offset value
 summary: Sets or clears the bit at offset in the string value stored at key
 */
-// setbit conn key offset value = ;
+setbit conn key offset value = rcommand conn ["SETBIT", key, offset, value];
 
 /*
 SETEX key seconds value
 summary: Set the value and expiration of a key
 */
-// setex conn key seconds value = ;
+setex conn key seconds value = rcommand conn ["SETEX", key, seconds, value];
 
 /*
 SETNX key value
 summary: Set the value of a key, only if the key does not exist
 */
-// setnx conn key value = ;
+setnx conn key value = rcommand conn ["SETNX", key, value];
 
 /*
 SETRANGE key offset value
 summary: Overwrite part of a string at key starting at the specified offset
 */
-// setrange conn key offset value = ;
+setrange conn key offset value = rcommand conn ["SETRANGE", key, offset, value];
 
 /*
 STRLEN key
 summary: Get the length of the value stored in a key
 */
-// strlen conn key
+strlen conn key = rcommand conn ["STRLEN", key];
+
 
 // ====================================================================== //
 //     @hash
@@ -398,79 +448,83 @@ summary: Get the length of the value stored in a key
 HDEL key field [field ...]
 summary: Delete one or more hash fields
 */
-// hdel conn key field [field ...] = ;
+hdel conn key fields::list = rcommand conn ("HDEL":key:fields);
+hdel conn key field = rcommand conn ["HDEL", key, field];
 
 /*
 HEXISTS key field
 summary: Determine if a hash field exists
 */
-// hexists conn key field = ;
+hexists conn key field = rcommand conn ["HEXISTS", key, field];
 
 /*
 HGET key field
 summary: Get the value of a hash field
 */
-// hget conn key field = ;
+hget conn key field = rcommand conn ["HGET", key, field];
 
 /*
 HGETALL key
 summary: Get all the fields and values in a hash
 */
-// hgetall conn key = ;
+hgetall conn key = rcommand conn ["HGETALL", key];
 
 /*
 HINCRBY key field increment
 summary: Increment the integer value of a hash field by the given number
 */
-// hincrby conn key field increment = ;
+hincrby conn key field increment = rcommand conn ["HINCRBY", key, field, increment];
 
 /*
 HINCRBYFLOAT key field increment
 summary: Increment the float value of a hash field by the given amount
 */
-// hincrbyfloat conn key field increment = ;
+hincrbyfloat conn key field increment = rcommand conn ["HINCRBYFLOAT", key, field, increment];
 
 /*
 HKEYS key
 summary: Get all the fields in a hash
 */
-// hkeys conn key = ;
+hkeys conn key = rcommand conn ["HKEYS", key];
 
 /*
 HLEN key
 summary: Get the number of fields in a hash
 */
-// hlen conn key = ;
+hlen conn key = rcommand conn ["HLEN", key];
 
 /*
 HMGET key field [field ...]
 summary: Get the values of all the given hash fields
 */
-// hmget conn key field [field ...] = ;
+hmget conn key fields::list = rcommand conn ("HMGET":key:fields);
+hmget conn key field = rcommand conn ["HMGET", key, field];
 
 /*
 HMSET key field value [field value ...]
 summary: Set multiple hash fields to multiple values
 */
-// hmset conn key field value [field value ...] = ;
+hmset conn key flds_vals::list = rcommand conn ("HMSET":key:(flatten flds_vals));
+hmset conn key (field, value) = rcommand conn ["HMSET", key, field, value];
 
 /*
 HSET key field value
 summary: Set the string value of a hash field
 */
-// hset conn key field value = ;
+hset conn key field value = rcommand conn ["HSET", key, field, value];
 
 /*
 HSETNX key field value
 summary: Set the value of a hash field, only if the field does not exist
 */
-// hsetnx conn key field value = ;
+hsetnx conn key field value = rcommand conn ["HSETNX", key, field, value];
 
 /*
 HVALS key
 summary: Get all the values in a hash
 */
-// hvals conn key
+hvals conn key = rcommand conn ["HVALS", key];
+
 
 // ====================================================================== //
 //     @list
@@ -480,103 +534,108 @@ summary: Get all the values in a hash
 BLPOP key [key ...] timeout
 summary: Remove and get the first element in a list, or block until one is available
 */
-// blpop conn key [key ...] timeout = ;
+blpop conn keys::list timeout = rcommand conn ("BLPOP":(keys + [timeout]));
+blpop conn key timeout = rcommand conn ["BLPOP", key, timeout];
 
 /*
 BRPOP key [key ...] timeout
 summary: Remove and get the last element in a list, or block until one is available
 */
-// brpop conn key [key ...] timeout = ;
+brpop conn keys::list timeout = rcommand conn ("BRPOP":(keys + [timeout]));
+brpop conn key timeout = rcommand conn ["BRPOP", key, timeout];
 
 /*
 BRPOPLPUSH source destination timeout
 summary: Pop a value from a list, push it to another list and return it; or block until one is available
 */
-// brpoplpush conn source destination timeout = ;
+brpoplpush conn source destination timeout = rcommand conn ["BRPOPLPUSH", source, destination, timeout];
 
 /*
 LINDEX key index
 summary: Get an element from a list by its index
 */
-// lindex conn key index = ;
+lindex conn key index = rcommand conn ["LINDEX", key, index];
 
 /*
 LINSERT key BEFORE|AFTER pivot value
 summary: Insert an element before or after another element in a list
 */
-// linsert conn key before|after pivot value = ;
+linsert conn key "BEFORE" pivot value = rcommand conn ["LINSERT", key, "BEFORE", pivot, value];
+linsert conn key "AFTER" pivot value = rcommand conn ["LINSERT", key, "AFTER", pivot, value];
 
 /*
 LLEN key
 summary: Get the length of a list
 */
-// llen conn key = ;
+llen conn key = rcommand conn ["LLEN", key];
 
 /*
 LPOP key
 summary: Remove and get the first element in a list
 */
-// lpop conn key = ;
+lpop conn key = rcommand conn ["LPOP", key];
 
 /*
 LPUSH key value [value ...]
 summary: Prepend one or multiple values to a list
 */
-// lpush conn key value [value ...] = ;
+lpush conn key values::list = rcommand conn ("LPUSH":key:values);
+lpush conn key value = rcommand conn ["LPUSH", key, value];
 
 /*
 LPUSHX key value
 summary: Prepend a value to a list, only if the list exists
 */
-// lpushx conn key value = ;
+lpushx conn key value = rcommand conn ["LPUSHX", key, value];
 
 /*
 LRANGE key start stop
 summary: Get a range of elements from a list
 */
-// lrange conn key start stop = ;
+lrange conn key start stop = rcommand conn ["LRANGE", key, start, stop];
 
 /*
 LREM key count value
 summary: Remove elements from a list
 */
-// lrem conn key count value = ;
+lrem conn key count value = rcommand conn ["LREM", key, count, value];
 
 /*
 LSET key index value
 summary: Set the value of an element in a list by its index
 */
-// lset conn key index value = ;
+lset conn key index value = rcommand conn ["LSET", key, index, value];
 
 /*
 LTRIM key start stop
 summary: Trim a list to the specified range
 */
-// ltrim conn key start stop = ;
+ltrim conn key start stop = rcommand conn ["LTRIM", key, start, stop];
 
 /*
 RPOP key
 summary: Remove and get the last element in a list
 */
-// rpop conn key = ;
+rpop conn key = rcommand conn ["RPOP", key];
 
 /*
 RPOPLPUSH source destination
 summary: Remove the last element in a list, append it to another list and return it
 */
-// rpoplpush conn source destination = ;
+rpoplpush conn source destination = rcommand conn ["RPOPLPUSH", source, destination];
 
 /*
 RPUSH key value [value ...]
 summary: Append one or multiple values to a list
 */
-// rpush conn key value [value ...] = ;
+rpush conn key values::list = rcommand conn ("RPUSH":key:values);
+rpush conn key value = rcommand conn ["RPUSH", key, value];
 
 /*
 RPUSHX key value
 summary: Append a value to a list, only if the list exists
 */
-// rpushx conn key value
+rpushx conn key value = rcommand conn ["RPUSHX", key, value];
 
 // ====================================================================== //
 //     @set
@@ -586,85 +645,94 @@ summary: Append a value to a list, only if the list exists
 SADD key member [member ...]
 summary: Add one or more members to a set
 */
-// sadd conn key member [member ...] = ;
+sadd conn key members::list = rcommand conn ("SADD":key:members);
+sadd conn key member = rcommand conn ["SADD", key, member];
 
 /*
 SCARD key
 summary: Get the number of members in a set
 */
-// scard conn key = ;
+scard conn key = rcommand conn ["SCARD", key];
 
 /*
 SDIFF key [key ...]
 summary: Subtract multiple sets
 */
-// sdiff conn key [key ...] = ;
+sdiff conn keys::list = rcommand conn ("SDIFF":keys);
+sdiff conn key = rcommand conn ["SDIFF", key];
 
 /*
 SDIFFSTORE destination key [key ...]
 summary: Subtract multiple sets and store the resulting set in a key
 */
-// sdiffstore conn destination key [key ...] = ;
+sdiffstore conn destination keys::list = rcommand conn ("SDIFFSTORE":destination:keys);
+sdiffstore conn destination key = rcommand conn ["SDIFFSTORE", destination, key];
 
 /*
 SINTER key [key ...]
 summary: Intersect multiple sets
 */
-// sinter conn key [key ...] = ;
+sinter conn keys::list = rcommand conn ("SINTER":keys);
+sinter conn key = rcommand conn ["SINTER", key];
 
 /*
 SINTERSTORE destination key [key ...]
 summary: Intersect multiple sets and store the resulting set in a key
 */
-// sinterstore conn destination key [key ...] = ;
+sinterstore conn dest keys::list = rcommand conn ("SINTERSTORE":dest:keys);
+sinterstore conn dest key = rcommand conn ["SINTERSTORE", dest, key];
 
 /*
 SISMEMBER key member
 summary: Determine if a given value is a member of a set
 */
-// sismember conn key member = ;
+sismember conn key member = rcommand conn ["SISMEMBER", key, member];
 
 /*
 SMEMBERS key
 summary: Get all the members in a set
 */
-// smembers conn key = ;
+smembers conn key = rcommand conn ["SMEMBERS", key];
 
 /*
 SMOVE source destination member
 summary: Move a member from one set to another
 */
-// smove conn source destination member = ;
+smove conn source destination member = rcommand conn ["SMOVE", source, destination, member];
 
 /*
 SPOP key
 summary: Remove and return a random member from a set
 */
-// spop conn key = ;
+spop conn key = rcommand conn ["SPOP", key];
 
 /*
 SRANDMEMBER key [count]
 summary: Get one or multiple random members from a set
 */
-// srandmember conn key [count] = ;
+srandmember conn (key, count) = rcommand conn ["SRANDMEMBER", key, count];
+srandmember conn key = rcommand conn ["SRANDMEMBER", key];
 
 /*
 SREM key member [member ...]
 summary: Remove one or more members from a set
 */
-// srem conn key member [member ...] = ;
+srem conn key members::list = rcommand conn ("SREM":key:members);
+srem conn key member = rcommand conn ["SREM", key, member];
 
 /*
 SUNION key [key ...]
 summary: Add multiple sets
 */
-// sunion conn key [key ...] = ;
+sunion conn keys::list = rcommand conn ("SUNION":keys);
+sunion conn key = rcommand conn ["SUNION", key];
 
 /*
 SUNIONSTORE destination key [key ...]
 summary: Add multiple sets and store the resulting set in a key
 */
-// sunionstore conn destination key [key ...]
+sunionstore conn dest keys::list = rcommand conn ("SUNIONSTORE":dest:keys);
+sunionstore conn dest key = rcommand conn ["SUNIONSTORE", dest, key];
 
 // ====================================================================== //
 //     @sorted_set
@@ -674,97 +742,105 @@ summary: Add multiple sets and store the resulting set in a key
 ZADD key score member [score member ...]
 summary: Add one or more members to a sorted set, or update its score if it already exists
 */
-// zadd conn key score member [score member ...] = ;
+zadd conn key scores_mems::list = rcommand conn ("ZADD":key:(flatten scores_mems));
+zadd conn key (score, member) = rcommand conn ["ZADD", key, score, member];
 
 /*
 ZCARD key
 summary: Get the number of members in a sorted set
 */
-// zcard conn key = ;
+zcard conn key = rcommand conn ["ZCARD", key];
 
 /*
 ZCOUNT key min max
 summary: Count the members in a sorted set with scores within the given values
 */
-// zcount conn key min max = ;
+zcount conn key min max = rcommand conn ["ZCOUNT", key, min, max];
 
 /*
 ZINCRBY key increment member
 summary: Increment the score of a member in a sorted set
 */
-// zincrby conn key increment member = ;
+zincrby conn key increment member = rcommand conn ["ZINCRBY", key, increment, member];
 
 /*
 ZINTERSTORE destination numkeys key [key ...] [WEIGHTS weight] [AGGREGATE SUM|MIN|MAX]
 summary: Intersect multiple sorted sets and store the resulting sorted set in a new key
 */
 // zinterstore conn destination numkeys key [key ...] [weights weight] [aggregate sum|min|max] = ;
+zinterstore conn destination numkeys keys::list = rcommand conn ("ZINTERSTORE":destination:numkeys:keys);
 
 /*
 ZRANGE key start stop [WITHSCORES]
 summary: Return a range of members in a sorted set, by index
 */
-// zrange conn key start stop [withscores] = ;
+zrange conn key (start, stop, true) = rcommand conn ["ZRANGE", key, start, stop, "WITHSCORES"];
+zrange conn key (start, stop) = rcommand conn ["ZRANGE", key, start, stop];
 
 /*
 ZRANGEBYSCORE key min max [WITHSCORES] [LIMIT offset count]
 summary: Return a range of members in a sorted set, by score
 */
-// zrangebyscore conn key min max [withscores] [limit offset count] = ;
+// zrangebyscore conn key min max [withscores] [limit offset count] = rcommand conn ["ZRANGEBYSCORE", key, min, max];
+zrangebyscore conn key min max = rcommand conn ["ZRANGEBYSCORE", key, min, max];
 
 /*
 ZRANK key member
 summary: Determine the index of a member in a sorted set
 */
-// zrank conn key member = ;
+zrank conn key member = rcommand conn ["ZRANK", key, member];
 
 /*
 ZREM key member [member ...]
 summary: Remove one or more members from a sorted set
 */
-// zrem conn key member [member ...] = ;
+zrem conn key members::list = rcommand conn ("ZREM":key:members);
+zrem conn key member = rcommand conn ["ZREM", key, member];
 
 /*
 ZREMRANGEBYRANK key start stop
 summary: Remove all members in a sorted set within the given indexes
 */
-// zremrangebyrank conn key start stop = ;
+zremrangebyrank conn key start stop = rcommand conn ["ZREMRANGEBYRANK", key, start, stop];
 
 /*
 ZREMRANGEBYSCORE key min max
 summary: Remove all members in a sorted set within the given scores
 */
-// zremrangebyscore conn key min max = ;
+zremrangebyscore conn key min max = rcommand conn ["ZREMRANGEBYSCORE", key, min, max];
 
 /*
 ZREVRANGE key start stop [WITHSCORES]
 summary: Return a range of members in a sorted set, by index, with scores ordered from high to low
 */
-// zrevrange conn key start stop [withscores] = ;
+zrevrange conn key (start, stop, true) = rcommand conn ["ZREVRANGE", key, start, stop, "WITHSCORES"];
+zrevrange conn key (start, stop) = rcommand conn ["ZREVRANGE", key, start, stop];
 
 /*
 ZREVRANGEBYSCORE key max min [WITHSCORES] [LIMIT offset count]
 summary: Return a range of members in a sorted set, by score, with scores ordered from high to low
 */
-// zrevrangebyscore conn key max min [withscores] [limit offset count] = ;
+// zrevrangebyscore conn key min max [withscores] [limit offset count] = rcommand conn ["ZREVRANGEBYSCORE", key, min, max];
+zrevrangebyscore conn key min max = rcommand conn ["ZREVRANGEBYSCORE", key, min, max];
 
 /*
 ZREVRANK key member
 summary: Determine the index of a member in a sorted set, with scores ordered from high to low
 */
-// zrevrank conn key member = ;
+zrevrank conn key member = rcommand conn ["ZREVRANK", key, member];
 
 /*
 ZSCORE key member
 summary: Get the score associated with the given member in a sorted set
 */
-// zscore conn key member = ;
+zscore conn key member = rcommand conn ["ZSCORE", key, member];
 
 /*
 ZUNIONSTORE destination numkeys key [key ...] [WEIGHTS weight] [AGGREGATE SUM|MIN|MAX]
 summary: Add multiple sorted sets and store the resulting sorted set in a new key
 */
-// zunionstore conn destination numkeys key [key ...] [weights weight] [aggregate sum|min|max]
+// zunionstore conn dest numkeys key [key ...] [weights weight] [aggregate sum|min|max]
+zunionstore conn dest numkeys keys::list = rcommand conn ("ZUNIONSTORE":dest:numkeys:keys);
 
 // ====================================================================== //
 //     @pubsub
@@ -774,31 +850,37 @@ summary: Add multiple sorted sets and store the resulting sorted set in a new ke
 PSUBSCRIBE pattern [pattern ...]
 summary: Listen for messages published to channels matching the given patterns
 */
-// psubscribe conn pattern [pattern ...] = ;
+psubscribe conn patterns::list = rcommand conn ("PSUBSCRIBE":patterns);
+psubscribe conn pattern = rcommand conn ["PSUBSCRIBE", pattern];
 
 /*
 PUBLISH channel message
 summary: Post a message to a channel
 */
-// publish conn channel message = ;
+publish conn channel message = rcommand conn ["PUBLISH", channel, message];
 
 /*
 PUNSUBSCRIBE [pattern [pattern ...]]
 summary: Stop listening for messages posted to channels matching the given patterns
 */
-// punsubscribe conn [pattern [pattern ...]] = ;
+punsubscribe conn patterns::list = rcommand conn ("PUNSUBSCRIBE":patterns);
+punsubscribe conn () = rcommand conn ["PUNSUBSCRIBE"];
+punsubscribe conn pattern = rcommand conn ["PUNSUBSCRIBE", pattern];
 
 /*
 SUBSCRIBE channel [channel ...]
 summary: Listen for messages published to the given channels
 */
-// subscribe conn channel [channel ...] = ;
+subscribe conn channels::list = rcommand conn ("SUBSCRIBE":channels);
+subscribe conn channel = rcommand conn ["SUBSCRIBE", channel];
 
 /*
 UNSUBSCRIBE [channel [channel ...]]
 summary: Stop listening for messages posted to the given channels
 */
-// unsubscribe conn [channel [channel ...]]
+unsubscribe conn channels::list = rcommand conn ("UNSUBSCRIBE":channels);
+unsubscribe conn () = rcommand conn ["UNSUBSCRIBE"];
+unsubscribe conn channel = rcommand conn ["UNSUBSCRIBE", channel];
 
 // ====================================================================== //
 //     @transactions
@@ -808,31 +890,33 @@ summary: Stop listening for messages posted to the given channels
 DISCARD -
 summary: Discard all commands issued after MULTI
 */
-// discard conn - = ;
+discard conn = rcommand conn ["DISCARD"];
 
 /*
 EXEC -
 summary: Execute all commands issued after MULTI
 */
-// exec conn - = ;
+exec conn = rcommand conn ["EXEC"];
 
 /*
 MULTI -
 summary: Mark the start of a transaction block
 */
-// multi conn - = ;
+multi conn = rcommand conn ["MULTI"];
 
 /*
 UNWATCH -
 summary: Forget about all watched keys
 */
-// unwatch conn - = ;
+unwatch conn = rcommand conn ["UNWATCH"];
 
 /*
 WATCH key [key ...]
 summary: Watch the given keys to determine execution of the MULTI/EXEC block
 */
-// watch conn key [key ...]
+watch conn keys::list = rcommand conn ("WATCH":keys);
+watch conn key = rcommand conn ["WATCH", key];
+
 
 // ====================================================================== //
 //     @scripting
@@ -882,13 +966,13 @@ summary: Load the specified Lua script into the script cache.
 AUTH password
 summary: Authenticate to the server
 */
-// auth conn password = ;
+auth conn password = rcommand conn ["AUTH", password];
 
 /*
 ECHO message
 summary: Echo the given string
 */
-// echo conn message = ;
+echo conn message = rcommand conn ["ECHO", message];
 
 /*
 PING -
@@ -900,13 +984,14 @@ ping conn = rcommand conn ["PING"] ;
 QUIT -
 summary: Close the connection
 */
-// quit conn - = ;
+quit conn = rcommand conn ["QUIT"] ;
 
 /*
 SELECT index
 summary: Change the selected database for the current connection
 */
-// select conn index
+select conn index = rcommand conn ["SELECT", index];
+
 
 // ====================================================================== //
 //     @server
@@ -917,138 +1002,146 @@ BGREWRITEAOF -
 summary: Asynchronously rewrite the append-only file
 */
 // bgrewriteaof conn - = ;
+bgrewriteaof conn = rcommand conn ["BGREWRITEAOF"];
 
 /*
 BGSAVE -
 summary: Asynchronously save the dataset to disk
 */
 // bgsave conn - = ;
+bgsave conn = rcommand conn ["BGSAVE"] ;
 
 /*
 CLIENT GETNAME -
 summary: Get the current connection name
 */
-// client conn getname - = ;
+client_getname conn = rcommand conn ["CLIENT", "GETNAME"];
 
 /*
 CLIENT KILL ip:port
 summary: Kill the connection of a client
 */
-// client conn kill ip:port = ;
+client_kill conn ip_port = rcommand conn ["CLIENT", "KILL", ip_port];
 
 /*
 CLIENT LIST -
 summary: Get the list of client connections
 */
-// client conn list - = ;
+client_list conn = rcommand conn ["CLIENT", "LIST"];
 
 /*
 CLIENT SETNAME connection-name
 summary: Set the current connection name
 */
-// client conn setname connection-name = ;
+client_setname conn conn_name = rcommand conn ["CLIENT", "SETNAME", conn_name];
 
 /*
 CONFIG GET parameter
 summary: Get the value of a configuration parameter
 */
-// config conn get parameter = ;
+config_get conn parameter = rcommand conn ["CONFIG", "GET", parameter];
 
 /*
 CONFIG RESETSTAT -
 summary: Reset the stats returned by INFO
 */
-// config conn resetstat - = ;
+config_resetstat conn = rcommand conn ["CONFIG", "RESETSTAT"];
 
 /*
 CONFIG SET parameter value
 summary: Set a configuration parameter to the given value
 */
-// config conn set parameter value = ;
+config_set conn parameter value = rcommand conn ["CONFIG", "SET", parameter, value];
 
 /*
 DBSIZE -
 summary: Return the number of keys in the selected database
 */
-// dbsize conn - = ;
+dbsize conn = rcommand conn ["DBSIZE"];
 
 /*
 DEBUG OBJECT key
 summary: Get debugging information about a key
 */
-// debug conn object key = ;
+debug_object conn key = rcommand conn ["DEBUG", "OBJECT", key];
 
 /*
 DEBUG SEGFAULT -
 summary: Make the server crash
 */
-// debug conn segfault - = ;
+debug_segfault conn key = rcommand conn ["DEBUG", "SEGFAULT", key];
 
 /*
 FLUSHALL -
 summary: Remove all keys from all databases
 */
-// flushall conn - = ;
+flushall conn = rcommand conn ["FLUSHALL"];
 
 /*
 FLUSHDB -
 summary: Remove all keys from the current database
 */
 // flushdb conn - = ;
+flushdb conn = rcommand conn ["FLUSHDB"];
 
 /*
 INFO [section]
 summary: Get information and statistics about the server
 */
-// info conn [section] = ;
+info conn () = rcommand conn ["INFO"];
+info conn section = rcommand conn ["INFO", section];
 
 /*
 LASTSAVE -
 summary: Get the UNIX time stamp of the last successful save to disk
 */
-// lastsave conn - = ;
+lastsave conn = rcommand conn ["LASTSAVE"];
 
 /*
 MONITOR -
 summary: Listen for all requests received by the server in real time
 */
-// monitor conn - = ;
+monitor conn = rcommand conn ["MONITOR"];
 
 /*
 SAVE -
 summary: Synchronously save the dataset to disk
 */
-// save conn - = ;
+save conn = rcommand conn ["SAVE"];
 
 /*
 SHUTDOWN [NOSAVE] [SAVE]
 summary: Synchronously save the dataset to disk and then shut down the server
 */
-// shutdown conn [nosave] [save] = ;
+shutdown conn () = rcommand conn ["SHUTDOWN"];
+shutdown conn true = rcommand conn ["SHUTDOWN", "SAVE"];
+shutdown conn false = rcommand conn ["SHUTDOWN", "NOSAVE"];
 
 /*
 SLAVEOF host port
 summary: Make the server a slave of another instance, or promote it as master
 */
-// slaveof conn host port = ;
+slaveof conn host port = rcommand conn ["SLAVEOF", host, port];
 
 /*
 SLOWLOG subcommand [argument]
 summary: Manages the Redis slow queries log
 */
-// slowlog conn subcommand [argument] = ;
+slowlog conn (subcommand, argument) = rcommand conn ["SLOWLOG", subcommand, argument];
+slowlog conn subcommand = rcommand conn ["SLOWLOG", subcommand];
 
 /*
 SYNC -
 summary: Internal command used for replication
 */
-// sync conn - = ;
+sync conn = rcommand conn ["SYNC"];
 
 /*
 TIME -
 summary: Return the current server time
 */
 // time conn - = ;
+time conn = rcommand conn ["TIME"];
 
 
 namespace;
